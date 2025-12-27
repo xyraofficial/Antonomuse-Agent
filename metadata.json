@@ -1,0 +1,5 @@
+{
+  "name": "DevAgent AI - Technical Blueprint Analyzer",
+  "description": "An autonomous developer agent that analyzes GitHub repositories for structural integrity, code quality, and technical debt using Gemini AI.",
+  "requestFramePermissions": []
+}
