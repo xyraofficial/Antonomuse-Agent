@@ -21,6 +21,32 @@
             background: linear-gradient(to right, transparent, #22d3ee, transparent);
             animation: scan 3s linear infinite;
         }
+
+        @media print {
+            .no-print { 
+                display: none !important; 
+            }
+            body { 
+                background-color: #020617 !important; /* slate-950 */
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            #root {
+                padding: 20px !important;
+            }
+            .bg-slate-900 { background-color: #0f172a !important; }
+            .bg-slate-950 { background-color: #020617 !important; }
+            .border-slate-800 { border-color: #1e293b !important; }
+            
+            /* Ensure layout doesn't break in PDF */
+            .grid { display: grid !important; }
+            .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+            
+            /* Remove transitions during print */
+            * { transition: none !important; animation: none !important; }
+        }
     </style>
 <script type="importmap">
 {

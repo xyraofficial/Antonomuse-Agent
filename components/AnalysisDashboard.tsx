@@ -9,7 +9,10 @@ import {
   Zap, 
   TrendingUp,
   ExternalLink,
-  Download
+  Download,
+  Smartphone,
+  ShieldAlert,
+  Settings
 } from 'lucide-react';
 
 interface AnalysisDashboardProps {
@@ -35,16 +38,31 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ data }) => {
     }
   };
 
+  const handleExport = () => {
+    setTimeout(() => {
+      window.print();
+    }, 100);
+  };
+
+  const isAndroid = data.dependencies.type.toLowerCase().includes('android') || data.androidMetadata;
+
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       {/* Header Summary */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-xl">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="space-y-2">
-            <h2 className="text-3xl font-bold text-white flex items-center gap-3">
-              <FileCode className="text-cyan-400" />
-              {data.projectName}
-            </h2>
+            <div className="flex items-center gap-2">
+               <h2 className="text-3xl font-bold text-white flex items-center gap-3">
+                <FileCode className="text-cyan-400" />
+                {data.projectName}
+              </h2>
+              {isAndroid && (
+                <span className="bg-green-500/10 text-green-400 text-[10px] font-bold px-2 py-0.5 rounded border border-green-500/20 uppercase tracking-widest flex items-center gap-1">
+                  <Smartphone size={12} /> Android Project
+                </span>
+              )}
+            </div>
             <p className="text-slate-400 max-w-2xl text-lg leading-relaxed">{data.summary}</p>
           </div>
           <div className="flex flex-col items-center justify-center p-6 bg-slate-950 rounded-2xl border border-slate-800 min-w-[140px]">
@@ -57,8 +75,43 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ data }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Structure & Dependencies */}
         <div className="space-y-8">
+          {/* Android Specific Metadata */}
+          {data.androidMetadata && (
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg shadow-green-900/5">
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <Smartphone size={20} className="text-green-400" />
+                Mobile Audit Data
+              </h3>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Min SDK</p>
+                    <p className="text-white font-mono text-xl">{data.androidMetadata.minSdkVersion}</p>
+                  </div>
+                  <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Target SDK</p>
+                    <p className="text-white font-mono text-xl">{data.androidMetadata.targetSdkVersion}</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[10px] text-slate-500 uppercase font-bold">Architecture</p>
+                  <p className="text-cyan-400 text-sm font-semibold">{data.androidMetadata.architecture}</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[10px] text-slate-500 uppercase font-bold">Manifest Permissions</p>
+                  <div className="flex flex-wrap gap-1">
+                    {data.androidMetadata.permissions.map(perm => (
+                      <span key={perm} className="text-[9px] px-1.5 py-0.5 bg-slate-800 text-slate-300 rounded-md border border-slate-700 font-mono">
+                        {perm.replace('android.permission.', '')}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Structure */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
             <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
@@ -176,10 +229,10 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ data }) => {
       </div>
 
       {/* Footer Actions */}
-      <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-8">
+      <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-8 no-print">
         <button 
-          onClick={() => window.print()} 
-          className="flex items-center gap-2 px-8 py-3 bg-white text-slate-950 rounded-xl font-bold hover:bg-slate-200 transition-colors"
+          onClick={handleExport} 
+          className="flex items-center gap-2 px-8 py-3 bg-white text-slate-950 rounded-xl font-bold hover:bg-slate-200 transition-colors shadow-lg"
         >
           <Download size={20} />
           Export PDF Report
@@ -190,6 +243,12 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ data }) => {
         >
           New Analysis
         </button>
+      </div>
+
+      {/* Print-only Footer */}
+      <div className="hidden print:block text-center text-slate-600 text-[10px] pt-12 border-t border-slate-800">
+        <p>Technical Analysis Report • Generated by DevAgent AI • {new Date().toLocaleString()}</p>
+        <p className="mt-1">© {new Date().getFullYear()} Autonomous Developer Agent Systems</p>
       </div>
     </div>
   );

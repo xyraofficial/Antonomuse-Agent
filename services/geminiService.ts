@@ -3,16 +3,23 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResult } from "../types";
 
 export const analyzeRepository = async (repoUrl: string): Promise<AnalysisResult> => {
-  // Always use {apiKey: process.env.API_KEY} for initialization as per guidelines
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  const prompt = `Analyze this technical blueprint/GitHub repository URL: ${repoUrl}. 
-  Since you cannot access private repos directly without a token, if it's public, use your knowledge of it. 
-  If it's private or unknown, generate a highly realistic technical audit based on typical projects of this URL's signature.
-  Provide a comprehensive audit report in JSON format. 
-  Focus on structure, dependencies (Node/Android/Python), linting issues, and architectural recommendations.`;
+  const prompt = `Analyze this technical blueprint or GitHub repository: ${repoUrl}. 
+  This agent acts as a Senior Android & Web Developer. 
+  
+  If it is an Android Project:
+  - Identify SDK versions (min, target).
+  - List requested Android Permissions from AndroidManifest.xml.
+  - Detect architecture (MVVM, Clean, etc.).
+  - Check for specific security risks (exported activities, debuggable true, hardcoded keys).
+  - Evaluate Gradle configuration.
 
-  // Upgraded to gemini-3-pro-preview for complex technical analysis tasks
+  If it is any other project:
+  - Perform standard technical audit of dependencies and structure.
+
+  Provide a comprehensive audit report in JSON format following the schema provided.`;
+
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
     contents: prompt,
@@ -40,6 +47,17 @@ export const analyzeRepository = async (repoUrl: string): Promise<AnalysisResult
               outdated: { type: Type.ARRAY, items: { type: Type.STRING } },
             },
             required: ["type", "list", "outdated"]
+          },
+          androidMetadata: {
+            type: Type.OBJECT,
+            properties: {
+              minSdkVersion: { type: Type.NUMBER },
+              targetSdkVersion: { type: Type.NUMBER },
+              permissions: { type: Type.ARRAY, items: { type: Type.STRING } },
+              architecture: { type: Type.STRING },
+              buildSystem: { type: Type.STRING },
+            },
+            required: ["minSdkVersion", "targetSdkVersion", "permissions", "architecture", "buildSystem"]
           },
           issues: {
             type: Type.ARRAY,
@@ -73,7 +91,6 @@ export const analyzeRepository = async (repoUrl: string): Promise<AnalysisResult
     },
   });
 
-  // response.text is a property, not a method
   const text = response.text;
   if (!text) {
     throw new Error("Empty response from AI");

@@ -12,6 +12,13 @@ export interface AnalysisResult {
     list: string[];
     outdated: string[];
   };
+  androidMetadata?: {
+    minSdkVersion: number;
+    targetSdkVersion: number;
+    permissions: string[];
+    architecture: string; // e.g., "MVVM", "MVI", "Clean Architecture"
+    buildSystem: string; // e.g., "Gradle (Groovy)", "Gradle (KTS)"
+  };
   issues: {
     severity: 'high' | 'medium' | 'low';
     category: string;

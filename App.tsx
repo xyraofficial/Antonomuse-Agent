@@ -13,7 +13,8 @@ import {
   CheckCircle2, 
   Github,
   Zap,
-  AlertCircle
+  AlertCircle,
+  Smartphone
 } from 'lucide-react';
 
 const STEPS = [
@@ -33,7 +34,6 @@ function App() {
     setError(null);
     setResult(null);
     
-    // Step-by-step UI simulation for the agent experience
     try {
       setCurrentStep(AnalysisStep.CLONING);
       await new Promise(r => setTimeout(r, 1500));
@@ -62,7 +62,7 @@ function App() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pb-24">
       {/* Navbar / Logo */}
-      <nav className="flex justify-between items-center mb-16">
+      <nav className="flex justify-between items-center mb-16 no-print">
         <div className="flex items-center gap-2 group cursor-pointer">
           <div className="bg-cyan-600 p-2 rounded-lg group-hover:rotate-12 transition-transform shadow-lg shadow-cyan-900/40">
             <Cpu className="text-white" size={24} />
@@ -80,9 +80,9 @@ function App() {
 
       {/* Hero Section */}
       {currentStep === AnalysisStep.IDLE && !result && (
-        <div className="text-center space-y-8 mb-16 animate-in slide-in-from-bottom-8 duration-1000">
+        <div className="text-center space-y-8 mb-16 animate-in slide-in-from-bottom-8 duration-1000 no-print">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-400/10 text-cyan-400 text-xs font-bold border border-cyan-400/20 uppercase tracking-widest">
-            <Zap size={14} /> New: Gemini 3 Integration Active
+            <Zap size={14} /> New: Android & Mobile Audit v2.0
           </div>
           <h2 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight leading-tight">
             Autonomous <br />
@@ -92,15 +92,16 @@ function App() {
           </h2>
           <p className="text-slate-400 text-xl max-w-2xl mx-auto leading-relaxed">
             Upload your GitHub repository for a comprehensive AI-driven audit. 
-            Detect bugs, analyze architecture, and get instant structural improvements.
+            Detect bugs, analyze Android architecture, and get instant structural improvements.
           </p>
           <RepoInput onAnalyze={handleAnalyze} isLoading={false} />
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 pt-12 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 pt-12 max-w-5xl mx-auto">
             {[
               { label: 'Code Quality', icon: ShieldCheck, color: 'text-cyan-400' },
               { label: 'Structure Map', icon: Box, color: 'text-blue-400' },
               { label: 'Bug Detection', icon: Search, color: 'text-purple-400' },
+              { label: 'Android Audit', icon: Smartphone, color: 'text-green-400' },
               { label: 'Optimization', icon: Zap, color: 'text-yellow-400' },
             ].map((feature, i) => (
               <div key={i} className="flex flex-col items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
@@ -114,7 +115,7 @@ function App() {
 
       {/* Analysis Progress View */}
       {currentStep !== AnalysisStep.IDLE && (
-        <div className="max-w-3xl mx-auto space-y-12 py-12">
+        <div className="max-w-3xl mx-auto space-y-12 py-12 no-print">
           <div className="text-center space-y-4">
             <h3 className="text-3xl font-bold text-white">Agent Scanning In Progress</h3>
             <p className="text-slate-400">Initializing secure virtualization for sandbox analysis...</p>
@@ -122,7 +123,6 @@ function App() {
 
           <div className="space-y-6">
             {STEPS.map((step, index) => {
-              const isPending = STEPS.findIndex(s => s.id === currentStep) < index;
               const isActive = step.id === currentStep;
               const isDone = STEPS.findIndex(s => s.id === currentStep) > index;
 
@@ -165,7 +165,7 @@ function App() {
 
       {/* Error Message */}
       {error && (
-        <div className="max-w-2xl mx-auto mt-12 p-6 bg-red-900/10 border border-red-500/20 rounded-2xl text-center space-y-4">
+        <div className="max-w-2xl mx-auto mt-12 p-6 bg-red-900/10 border border-red-500/20 rounded-2xl text-center space-y-4 no-print">
           <AlertCircle className="text-red-400 mx-auto" size={48} />
           <p className="text-red-400 font-medium">{error}</p>
           <button 
@@ -177,9 +177,9 @@ function App() {
         </div>
       )}
 
-      {/* Technical Log View (Hidden/Collapsible maybe) */}
+      {/* Technical Log View */}
       {currentStep !== AnalysisStep.IDLE && (
-        <div className="mt-12 max-w-3xl mx-auto p-4 bg-black rounded-xl border border-slate-800 font-mono text-[10px] text-green-500 h-32 overflow-hidden relative shadow-inner">
+        <div className="mt-12 max-w-3xl mx-auto p-4 bg-black rounded-xl border border-slate-800 font-mono text-[10px] text-green-500 h-32 overflow-hidden relative shadow-inner no-print">
           <div className="space-y-1 animate-pulse">
             <p>> [AGENT] Authenticating with VCS...</p>
             <p>> [VCS] Connection established. Branch: main</p>
