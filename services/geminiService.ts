@@ -5,20 +5,33 @@ import { AnalysisResult } from "../types";
 export const analyzeRepository = async (repoUrl: string): Promise<AnalysisResult> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  const prompt = `Analyze this technical blueprint or GitHub repository: ${repoUrl}. 
-  This agent acts as a Senior Android & Web Developer. 
-  
-  If it is an Android Project:
-  - Identify SDK versions (min, target).
-  - List requested Android Permissions from AndroidManifest.xml.
-  - Detect architecture (MVVM, Clean, etc.).
-  - Check for specific security risks (exported activities, debuggable true, hardcoded keys).
-  - Evaluate Gradle configuration.
+  const prompt = `You are an Expert Android Software Architect and Security Lead. Analyze this repository: ${repoUrl}.
 
-  If it is any other project:
-  - Perform standard technical audit of dependencies and structure.
+  STRICT INSTRUCTIONS:
+  1. PROJECT FOCUS: This is an Android Technical Audit. If the repository is identified as an Android project (look for 'build.gradle', 'AndroidManifest.xml', 'app/src/main'), focus EXCLUSIVELY on Android-specific components.
+  2. EXCLUDE IRRELEVANT DATA: Do not analyze or provide code snippets for Python, JavaScript, Ruby, or other non-Android languages unless they are specifically part of a cross-platform bridge (like JNI or Flutter/React Native integration).
+  3. COMPREHENSIVE FOLDER ANALYSIS:
+     - Audit 'app/src/main/java' or 'app/src/main/kotlin'.
+     - Audit 'res/' folders (layout, drawable, values, xml).
+     - Audit 'assets/' and 'jniLibs/' if present.
+     - Analyze the root vs module-level 'build.gradle' (KTS or Groovy).
+  4. DEPENDENCY & BUILD SYSTEM AUDIT:
+     - Identify SDK versions (Compile, Target, Min).
+     - Detect key libraries: Jetpack Compose, Hilt/Dagger, Retrofit/OkHttp, Room, Navigation, WorkManager.
+     - Identify if the project uses modern Gradle features (Version Catalogs, KTS).
+  5. PROGRESS ESTIMATION (developmentProgress):
+     - Calculate 0-100 based on:
+        a) Presence of core features (UI vs Data Layer vs Logic).
+        b) Implementation of best practices (Unit tests, Architecture patterns).
+        c) "Stubble" vs "Production-Ready" code (Presence of TODOs, empty classes, or placeholder strings).
+  6. ISSUE DETECTION:
+     - Detect memory leaks (Static Contexts, anonymous Listeners).
+     - Detect Security flaws (Hardcoded API Keys, exported components, unsafe Intents).
+     - Detect Architectural debt (Large activities, tight coupling, lack of DI).
 
-  Provide a comprehensive audit report in JSON format following the schema provided.`;
+  Use [[HL]] and [[/HL]] inside snippets to highlight specific lines that cause issues.
+
+  Return a JSON report strictly following the provided schema.`;
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
@@ -42,7 +55,7 @@ export const analyzeRepository = async (repoUrl: string): Promise<AnalysisResult
           dependencies: {
             type: Type.OBJECT,
             properties: {
-              type: { type: Type.STRING },
+              type: { type: Type.STRING, description: "e.g., Android (Gradle-Groovy) or Android (Gradle-KTS)" },
               list: { type: Type.ARRAY, items: { type: Type.STRING } },
               outdated: { type: Type.ARRAY, items: { type: Type.STRING } },
             },
@@ -53,8 +66,18 @@ export const analyzeRepository = async (repoUrl: string): Promise<AnalysisResult
             properties: {
               minSdkVersion: { type: Type.NUMBER },
               targetSdkVersion: { type: Type.NUMBER },
-              permissions: { type: Type.ARRAY, items: { type: Type.STRING } },
-              architecture: { type: Type.STRING },
+              permissions: { 
+                type: Type.ARRAY, 
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    name: { type: Type.STRING },
+                    description: { type: Type.STRING }
+                  },
+                  required: ["name", "description"]
+                }
+              },
+              architecture: { type: Type.STRING, description: "MVVM, MVI, MVC, or Unknown" },
               buildSystem: { type: Type.STRING },
             },
             required: ["minSdkVersion", "targetSdkVersion", "permissions", "architecture", "buildSystem"]
@@ -67,9 +90,10 @@ export const analyzeRepository = async (repoUrl: string): Promise<AnalysisResult
                 severity: { type: Type.STRING, enum: ["high", "medium", "low"] },
                 category: { type: Type.STRING },
                 description: { type: Type.STRING },
-                location: { type: Type.STRING },
+                location: { type: Type.STRING, description: "Full path to the file" },
+                snippet: { type: Type.STRING, description: "Code snippet with [[HL]] tags" },
               },
-              required: ["severity", "category", "description"]
+              required: ["severity", "category", "description", "location"]
             }
           },
           recommendations: {
@@ -84,9 +108,10 @@ export const analyzeRepository = async (repoUrl: string): Promise<AnalysisResult
               required: ["title", "description", "priority"]
             }
           },
-          score: { type: Type.NUMBER },
+          score: { type: Type.NUMBER, description: "Overall project health score 0-100" },
+          developmentProgress: { type: Type.NUMBER, description: "Estimated completion percentage 0-100" },
         },
-        required: ["projectName", "summary", "structure", "dependencies", "issues", "recommendations", "score"]
+        required: ["projectName", "summary", "structure", "dependencies", "issues", "recommendations", "score", "developmentProgress"]
       },
     },
   });

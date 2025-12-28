@@ -15,7 +15,7 @@ export interface AnalysisResult {
   androidMetadata?: {
     minSdkVersion: number;
     targetSdkVersion: number;
-    permissions: string[];
+    permissions: { name: string; description: string }[];
     architecture: string; // e.g., "MVVM", "MVI", "Clean Architecture"
     buildSystem: string; // e.g., "Gradle (Groovy)", "Gradle (KTS)"
   };
@@ -24,6 +24,7 @@ export interface AnalysisResult {
     category: string;
     description: string;
     location?: string;
+    snippet?: string; // Hypothetical code snippet for context
   }[];
   recommendations: {
     title: string;
@@ -31,6 +32,7 @@ export interface AnalysisResult {
     priority: 'critical' | 'important' | 'nice-to-have';
   }[];
   score: number;
+  developmentProgress: number; // New: Estimated % of project completion/maturity
 }
 
 export enum AnalysisStep {

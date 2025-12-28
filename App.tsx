@@ -4,6 +4,7 @@ import { AnalysisResult, AnalysisStep } from './types';
 import { analyzeRepository } from './services/geminiService';
 import RepoInput from './components/RepoInput';
 import AnalysisDashboard from './components/AnalysisDashboard';
+import InfoSections from './components/InfoSections';
 import { 
   Terminal, 
   Cpu, 
@@ -14,7 +15,8 @@ import {
   Github,
   Zap,
   AlertCircle,
-  Smartphone
+  Smartphone,
+  Loader2
 } from 'lucide-react';
 
 const STEPS = [
@@ -29,26 +31,66 @@ function App() {
   const [currentStep, setCurrentStep] = useState<AnalysisStep>(AnalysisStep.IDLE);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [activeInfoSection, setActiveInfoSection] = useState<'docs' | 'api' | 'pricing' | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [statusMsg, setStatusMsg] = useState('');
+
+  const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 
   const handleAnalyze = async (url: string) => {
     setError(null);
     setResult(null);
+    setProgress(0);
     
     try {
+      // Step 1: Cloning
       setCurrentStep(AnalysisStep.CLONING);
-      await new Promise(r => setTimeout(r, 1500));
+      setStatusMsg("Establishing handshake with GitHub...");
+      await wait(800); setProgress(10);
+      setStatusMsg("Cloning source tree into ephemeral container...");
+      await wait(1000); setProgress(20);
       
+      // Step 2: Structuring
       setCurrentStep(AnalysisStep.STRUCTURING);
-      await new Promise(r => setTimeout(r, 1500));
+      setStatusMsg("Analyzing project layout and architecture...");
+      await wait(800); setProgress(30);
+      setStatusMsg("Detecting build system and entry points...");
+      await wait(1000); setProgress(40);
       
+      // Step 3: Linting
       setCurrentStep(AnalysisStep.LINTING);
-      await new Promise(r => setTimeout(r, 1500));
+      setStatusMsg("Initializing security scanning engine...");
+      await wait(800); setProgress(50);
+      setStatusMsg("Running static analysis on dependencies...");
+      await wait(1000); setProgress(60);
       
+      // Step 4: Identifying (AI Analysis)
       setCurrentStep(AnalysisStep.IDENTIFYING);
-      const data = await analyzeRepository(url);
+      setStatusMsg("Uploading context to Gemini 3 Pro reasoning engine...");
       
+      const analysisPromise = analyzeRepository(url);
+      
+      // Dynamic status updates while waiting for AI
+      const aiStatusInterval = setInterval(() => {
+        const msgs = [
+          "AI is auditing business logic patterns...",
+          "Searching for architectural anti-patterns...",
+          "Evaluating Android Manifest security...",
+          "Analyzing dependency graph for vulnerabilities...",
+          "Checking for hardcoded secrets and leaked tokens...",
+          "Simulating build process for dependency verification..."
+        ];
+        setStatusMsg(msgs[Math.floor(Math.random() * msgs.length)]);
+      }, 3000);
+
+      const data = await analysisPromise;
+      clearInterval(aiStatusInterval);
+      setProgress(90);
+      
+      // Step 5: Reporting
       setCurrentStep(AnalysisStep.REPORTING);
-      await new Promise(r => setTimeout(r, 1000));
+      setStatusMsg("Structuring findings into comprehensive report...");
+      await wait(1000); setProgress(100);
       
       setResult(data);
       setCurrentStep(AnalysisStep.IDLE);
@@ -56,6 +98,7 @@ function App() {
       console.error(err);
       setError('Analysis failed. The repository might be private or inaccessible. Please check the URL.');
       setCurrentStep(AnalysisStep.IDLE);
+      setProgress(0);
     }
   };
 
@@ -63,7 +106,10 @@ function App() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pb-24">
       {/* Navbar / Logo */}
       <nav className="flex justify-between items-center mb-16 no-print">
-        <div className="flex items-center gap-2 group cursor-pointer">
+        <div 
+          onClick={() => { setResult(null); setCurrentStep(AnalysisStep.IDLE); }}
+          className="flex items-center gap-2 group cursor-pointer"
+        >
           <div className="bg-cyan-600 p-2 rounded-lg group-hover:rotate-12 transition-transform shadow-lg shadow-cyan-900/40">
             <Cpu className="text-white" size={24} />
           </div>
@@ -72,9 +118,24 @@ function App() {
           </h1>
         </div>
         <div className="hidden md:flex gap-8 text-sm font-medium text-slate-400">
-          <a href="#" className="hover:text-cyan-400 transition-colors">Documentation</a>
-          <a href="#" className="hover:text-cyan-400 transition-colors">API Keys</a>
-          <a href="#" className="hover:text-cyan-400 transition-colors">Pricing</a>
+          <button 
+            onClick={() => setActiveInfoSection('docs')} 
+            className="hover:text-cyan-400 transition-colors"
+          >
+            Documentation
+          </button>
+          <button 
+            onClick={() => setActiveInfoSection('api')} 
+            className="hover:text-cyan-400 transition-colors"
+          >
+            API Status
+          </button>
+          <button 
+            onClick={() => setActiveInfoSection('pricing')} 
+            className="hover:text-cyan-400 transition-colors"
+          >
+            Pricing
+          </button>
         </div>
       </nav>
 
@@ -117,11 +178,26 @@ function App() {
       {currentStep !== AnalysisStep.IDLE && (
         <div className="max-w-3xl mx-auto space-y-12 py-12 no-print">
           <div className="text-center space-y-4">
-            <h3 className="text-3xl font-bold text-white">Agent Scanning In Progress</h3>
-            <p className="text-slate-400">Initializing secure virtualization for sandbox analysis...</p>
+            <div className="inline-flex items-center gap-2 text-cyan-400 font-mono text-xs uppercase tracking-[0.2em] mb-2">
+              <Loader2 className="animate-spin" size={14} /> system audit active
+            </div>
+            <h3 className="text-4xl font-black text-white tracking-tight">Processing Repository</h3>
+            
+            {/* Main Progress Bar */}
+            <div className="w-full h-1.5 bg-slate-900 rounded-full mt-6 overflow-hidden border border-slate-800">
+              <div 
+                className="h-full bg-gradient-to-r from-cyan-600 to-blue-500 transition-all duration-700 ease-out shadow-[0_0_15px_rgba(34,211,238,0.3)]"
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+            <div className="flex justify-between text-[10px] font-mono text-slate-500 uppercase tracking-widest pt-1">
+              <span>Initialization</span>
+              <span>{progress}% Complete</span>
+              <span>Analysis</span>
+            </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             {STEPS.map((step, index) => {
               const isActive = step.id === currentStep;
               const isDone = STEPS.findIndex(s => s.id === currentStep) > index;
@@ -129,22 +205,31 @@ function App() {
               return (
                 <div 
                   key={step.id} 
-                  className={`relative flex items-center gap-6 p-6 rounded-2xl border transition-all duration-500 ${
+                  className={`relative flex items-center gap-6 p-5 rounded-2xl border transition-all duration-500 ${
                     isActive 
                       ? 'bg-slate-900 border-cyan-500/50 shadow-2xl shadow-cyan-900/20' 
                       : isDone 
-                        ? 'bg-slate-950 border-slate-800 opacity-60' 
-                        : 'bg-slate-950 border-slate-900 opacity-40'
+                        ? 'bg-slate-950 border-slate-800 opacity-60 scale-[0.98]' 
+                        : 'bg-slate-950 border-slate-900 opacity-30 scale-95'
                   }`}
                 >
-                  <div className={`p-3 rounded-xl ${
-                    isActive ? 'bg-cyan-500 text-white animate-pulse' : isDone ? 'bg-green-500 text-white' : 'bg-slate-800 text-slate-500'
+                  <div className={`p-3 rounded-xl transition-colors duration-500 ${
+                    isActive ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/20' : isDone ? 'bg-green-500 text-white' : 'bg-slate-800 text-slate-500'
                   }`}>
-                    {isDone ? <CheckCircle2 size={24} /> : <step.icon size={24} />}
+                    {isDone ? <CheckCircle2 size={24} /> : <step.icon size={24} className={isActive ? 'animate-pulse' : ''} />}
                   </div>
                   <div className="flex-1">
-                    <h4 className={`font-bold ${isActive ? 'text-white' : 'text-slate-400'}`}>{step.label}</h4>
-                    <p className="text-sm text-slate-500">{step.desc}</p>
+                    <div className="flex items-center gap-3">
+                      <h4 className={`font-bold tracking-tight ${isActive ? 'text-white' : 'text-slate-400'}`}>{step.label}</h4>
+                      {isActive && (
+                        <span className="text-[10px] font-mono bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded border border-cyan-500/20 uppercase animate-pulse">
+                          Running
+                        </span>
+                      )}
+                    </div>
+                    <p className={`text-sm transition-colors ${isActive ? 'text-slate-300' : 'text-slate-500'}`}>
+                      {isActive ? statusMsg : step.desc}
+                    </p>
                   </div>
                   {isActive && (
                     <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-2xl">
@@ -154,6 +239,19 @@ function App() {
                 </div>
               );
             })}
+          </div>
+
+          {/* Technical Log View */}
+          <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 font-mono text-[10px] text-green-500 h-32 overflow-hidden relative shadow-inner">
+            <div className="space-y-1">
+              <p className="opacity-40">> [BOOT] Engine v2.0.4 build-4928...</p>
+              <p className="opacity-60">> [AUTH] Authenticating session...</p>
+              <p className="opacity-80">> [AGENT] Target repository confirmed.</p>
+              <p className="text-cyan-400">> [LIVE] {statusMsg}</p>
+              <p className="animate-pulse">> [SYSTEM] Tracking thread PID: {Math.floor(Math.random() * 9000 + 1000)}</p>
+              <p className="opacity-30">> [CACHE] Searching for previous metadata snapshots...</p>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
           </div>
         </div>
       )}
@@ -170,27 +268,18 @@ function App() {
           <p className="text-red-400 font-medium">{error}</p>
           <button 
             onClick={() => window.location.reload()} 
-            className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+            className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
           >
             Try Again
           </button>
         </div>
       )}
 
-      {/* Technical Log View */}
-      {currentStep !== AnalysisStep.IDLE && (
-        <div className="mt-12 max-w-3xl mx-auto p-4 bg-black rounded-xl border border-slate-800 font-mono text-[10px] text-green-500 h-32 overflow-hidden relative shadow-inner no-print">
-          <div className="space-y-1 animate-pulse">
-            <p>> [AGENT] Authenticating with VCS...</p>
-            <p>> [VCS] Connection established. Branch: main</p>
-            <p>> [SANDBOX] Mounting volume /tmp/project_analysis...</p>
-            <p>> [LINTER] Scanning AST trees for complexity scores...</p>
-            <p>> [DEPENDENCY] Fetching manifest from lockfile...</p>
-            <p>> [SYSTEM] Aggregating results for JSON parser...</p>
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
-        </div>
-      )}
+      {/* Info Sections Modal */}
+      <InfoSections 
+        activeSection={activeInfoSection} 
+        onClose={() => setActiveInfoSection(null)} 
+      />
     </div>
   );
 }
